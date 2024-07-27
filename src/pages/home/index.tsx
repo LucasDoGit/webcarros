@@ -1,6 +1,66 @@
+import { useState, useEffect } from "react";
 import { Container } from "../../components/container";
 
+import { Link } from "react-router-dom";
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../../services/firebaseConnection";
+
+interface CarsProps {
+    id: string;
+    name: string;
+    year: string;
+    uid: string;
+    price: string | number;
+    city: string;
+    km: string;
+    images: CarImageProps[];
+}
+
+interface CarImageProps {
+    name: string;
+    uid: string;
+    url: string;
+}
+
 export function Home() {
+    const [cars, setCars] = useState<CarsProps[]>([])
+    const [loadImages, setLoadImages] = useState<string[]>([])
+
+    useEffect(() => {
+        function loadCars() {
+            const carsRef = collection(db, "cars")
+            const queryRef = query(carsRef, orderBy("created", "desc"))
+
+            getDocs(queryRef)
+                .then((snapshot) => {
+                    let listcars = [] as CarsProps[];
+
+                    snapshot.forEach(doc => {
+                        listcars.push({
+                            id: doc.id,
+                            name: doc.data().name,
+                            year: doc.data().year,
+                            km: doc.data().km,
+                            city: doc.data().city,
+                            price: doc.data().price,
+                            images: doc.data().images,
+                            uid: doc.data().uid
+                        })
+                    })
+
+                    setCars(listcars)
+                })
+                .catch((err) => {
+                    console.log("Erro ao buscar carros", err)
+                })
+        }
+
+        loadCars();
+    })
+
+    function handleImageLoad(id: string){
+        setLoadImages((prevImageLoaded) => [...prevImageLoaded, id])
+    }
 
     return (
         <Container>
@@ -22,30 +82,40 @@ export function Home() {
             </h1>
 
             <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                
-                <section className="w-full bg-white rounded-lg">
-                    <img
-                        className="w-full rounded-lg mb-2 max-h-72 hover:scale-105 transition-all" 
-                        src="https://image.webmotors.com.br/_fotos/anunciousados/gigante/2024/202406/20240626/honda-civic-2.0-16v-flexone-exl-4p-cvt-wmimagem15015798327.jpg?s=fill&w=1920&h=1440&q=75" 
-                        alt="honda civic" 
-                    />
 
-                    <p className="font-bold mt-1 mb-2 px-2">Honda Civic</p>
+                {cars.map(car => (
+                    <Link key={car.id} to={`/car/${car.id}`}>
+                        <section className="w-full bg-white rounded-lg">
+                            <div 
+                                className="w-full h-72 rounded-lg bg-slate-200"
+                                style={{ display: loadImages.includes(car.id) ? "none" : "block"}}
+                            ></div>
+                            <img
+                                className="w-full rounded-lg mb-2 max-h-72 hover:scale-105 transition-all"
+                                src={car.images[0].url}
+                                alt={car.name}
+                                onLoad={ () => handleImageLoad(car.id)}
+                                style={{ display: loadImages.includes(car.id) ? "block" : "none"}}
+                            />
 
-                    <div className="flex flex-col px-2">
-                        <span className="text-zinc-700 mb-6">Ano 2020/2016 | 15.000 km</span>
-                        <strong className="text-black font-medium text-xl">R$ 129.890</strong>
-                    </div>
+                            <p className="font-bold mt-1 mb-2 px-2">{car.name}</p>
 
-                    <div className="w-full h-px bg-slate-200 my-2"></div>
+                            <div className="flex flex-col px-2">
+                                <span className="text-zinc-700 mb-6">Ano {car.year} | {car.km} km</span>
+                                <strong className="text-black font-medium text-xl">R$ {car.price}</strong>
+                            </div>
 
-                    <div className="px-2 pb-2">
-                        <span className="text-zinc-700">
-                            Campinas - SP
-                        </span>
-                    </div>
-                </section>
-                
+                            <div className="w-full h-px bg-slate-200 my-2"></div>
+
+                            <div className="px-2 pb-2">
+                                <span className="text-zinc-700">
+                                    {car.city}
+                                </span>
+                            </div>
+                        </section>
+                    </Link>
+                ))}
+
             </main>
         </Container>
     )
