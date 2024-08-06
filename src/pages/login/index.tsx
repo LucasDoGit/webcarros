@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../../services/firebaseConnection'
 
+import toast from 'react-hot-toast';
+
 const schema = z.object({
     email: z.string().email("Insira um email válido").min(1, "O campo e-mail é obrigatório"),
     password: z.string().min(1, "O campo senha é obrigatório")
@@ -27,18 +29,21 @@ export function Login() {
         mode: "onChange"
     })
 
-    function onSubmit(data: FormData){
+    function onSubmit(data: FormData) {
         signInWithEmailAndPassword(auth, data.email, data.password)
-        .then((user) => {
-            console.log("logado com sucesso!")
-            console.log(user)
-            navigate("/dashboard", { replace: true })
-        })
-        .catch((error) => console.log("Erro ao fazer login", error))
+            .then((user) => {
+                console.log(user)
+                toast.success("Logado com sucesso!")
+                navigate("/dashboard", { replace: true })
+            })
+            .catch((error) => {
+                console.log("Erro ao fazer login", error);
+                toast.error("Erro ao fazer login");
+            })
     }
 
     useEffect(() => {
-        async function handleLogout(){
+        async function handleLogout() {
             await signOut(auth)
         }
 
@@ -49,19 +54,19 @@ export function Login() {
         <Container>
             <div className='w-full min-h-screen flex justify-center items-center flex-col gap-4'>
                 <Link to="/" className='mb-6 max-w-sm w-full'>
-                    <img 
+                    <img
                         src={logoImg}
                         alt='Logo do Site'
                         className='w-full'>
                     </img>
                 </Link>
 
-                <form 
+                <form
                     className='bg-white max-w-xl w-full rounded-lg p-4'
                     onSubmit={handleSubmit(onSubmit)}
                 >
                     <div className='mb-3'>
-                        <Input 
+                        <Input
                             type="email"
                             placeholder="Digite o seu e-mail"
                             name="email"
@@ -71,7 +76,7 @@ export function Login() {
                     </div>
 
                     <div className='mb-3'>
-                        <Input 
+                        <Input
                             type="password"
                             placeholder="Digite sua senha"
                             name="password"
@@ -80,7 +85,7 @@ export function Login() {
                         />
                     </div>
 
-                    <button 
+                    <button
                         className='bg-zinc-900 w-full rounded-md text-white h-10 font-medium'
                         type='submit'
                     >

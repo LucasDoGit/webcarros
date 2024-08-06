@@ -10,10 +10,13 @@ import { AuthContext } from '../../../contexts/AuthContext'
 import { v4 as uuidV4 } from 'uuid';
 
 import { storage, db } from '../../../services/firebaseConnection';
-import { ref, 
-    uploadBytes, 
-    getDownloadURL, deleteObject } from 'firebase/storage'
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL, deleteObject
+} from 'firebase/storage'
 import { addDoc, collection } from 'firebase/firestore'
+import toast from "react-hot-toast";
 
 
 const schema = z.object({
@@ -47,15 +50,15 @@ export function New() {
 
     const [carImages, setCarImages] = useState<ImageItemProps[]>([])
 
-    function onSubmit(data: FormData){
+    function onSubmit(data: FormData) {
 
-        if(carImages.length === 0){
-            alert("Por favor insira imagens do veiculo!")
+        if (carImages.length === 0) {
+            toast.error("Por favor insira imagens do veiculo!")
             return
         }
 
-        const carListImages = carImages.map( car => {
-            return{
+        const carListImages = carImages.map(car => {
+            return {
                 uid: car.uid,
                 name: car.name,
                 url: car.url
@@ -63,7 +66,7 @@ export function New() {
         })
 
         addDoc(collection(db, "cars"), {
-            name: data.name,
+            name: data.name.toUpperCase(),
             model: data.model,
             whatsapp: data.whatsapp,
             city: data.city,
@@ -76,34 +79,35 @@ export function New() {
             uid: user?.uid,
             images: carListImages,
         })
-        .then(() => {
-            reset();
-            setCarImages([]);
-            console.log("cadastrado com sucesso!")
-        }) 
-        .catch((err) => {
-            console.log("Erro ao tentar cadastrar imóvel", err)
-        })
-        
+            .then(() => {
+                reset();
+                setCarImages([]);
+                toast.success("cadastrado com sucesso!")
+            })
+            .catch((err) => {
+                console.log("Erro ao tentar cadastrar imóvel", err)
+                toast.error("Erro ao cadastrar veículo!")
+            })
+
     }
 
-    async function handleFile(e: ChangeEvent<HTMLInputElement>){
-        if(e.target.files && e.target.files[0]){
+    async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+        if (e.target.files && e.target.files[0]) {
             const image = e.target.files[0]
 
-            if(image.type === "image/jpeg" || image.type === "image/png"){
+            if (image.type === "image/jpeg" || image.type === "image/png") {
                 await handleUpload(image)
             } else {
-                alert("A foto precisa estar no formato de JPEG ou PNG")
+                toast.error("A foto precisa estar no formato de JPEG ou PNG")
                 return
             }
         }
     }
 
     async function handleUpload(image: File) {
-        if(!user?.uid){
+        if (!user?.uid) {
             return
-        } 
+        }
 
         const currentUid = user?.uid;
         const uidImage = uuidV4();
@@ -111,18 +115,18 @@ export function New() {
         const upload = ref(storage, `images/${currentUid}/${uidImage}`)
 
         uploadBytes(upload, image)
-        .then((snapshot) => {
-            getDownloadURL(snapshot.ref).then((downloadUrl) => {
-                const imageItem = {
-                    name: uidImage,
-                    uid: currentUid,
-                    previewUrl: URL.createObjectURL(image),
-                    url: downloadUrl,
-                }
-
-                setCarImages((images) => [...images, imageItem])
+            .then((snapshot) => {
+                getDownloadURL(snapshot.ref).then((downloadUrl) => {
+                    const imageItem = {
+                        name: uidImage,
+                        uid: currentUid,
+                        previewUrl: URL.createObjectURL(image),
+                        url: downloadUrl,
+                    }
+                    toast.success("Imagem cadastradas com sucesso");
+                    setCarImages((images) => [...images, imageItem])
+                })
             })
-        })
     }
 
     async function handleDeleteImage(image: ImageItemProps) {
@@ -133,52 +137,52 @@ export function New() {
         try {
             await deleteObject(imageRef)
             setCarImages(carImages.filter((car) => car.url !== image.url))
-        } catch(err){
+        } catch (err) {
             console.log("Erro ao deletar imagem")
         }
     }
 
     return (
         <Container>
-            <DashboradHeader/>
+            <DashboradHeader />
 
             <div className="w-full bg-white p-3 rounded-lg flex flex-col sm:flex-row items-center gap-2">
                 <button className="border-2 w-48 rounded-lg flex items-center justify-center cursor-pointer border-gray-600 h-32 md:w-48">
                     <div className="absolute cursor-pointer">
-                        <FiUpload size={30} color="#000"/>
+                        <FiUpload size={30} color="#000" />
                     </div>
                     <div className="cursor-pointer">
-                        <input 
-                            className="opacity-0 cursor-pointer" 
-                            type="file" 
+                        <input
+                            className="opacity-0 cursor-pointer"
+                            type="file"
                             accept="image/*"
                             onChange={handleFile}
                         />
                     </div>
                 </button>
 
-                {carImages.map( item => (
+                {carImages.map(item => (
                     <div key={item.name} className="w-full h-32 flex items-center justify-center relative">
                         <button className="absolute" onClick={() => handleDeleteImage(item)}>
                             <FiTrash size={28} color="#fff" />
                         </button>
-                        <img 
+                        <img
                             src={item.previewUrl}
-                            className="rounded-ld w-full h-32 object-cover" 
-                            alt="Foto do carro" 
+                            className="rounded-ld w-full h-32 object-cover"
+                            alt="Foto do carro"
                         />
                     </div>
                 ))}
             </div>
 
             <div className="w-full bg-white p-3 rounded-lg flex flex-col sm:flex-row items-center gap-2 mt-2">
-                <form 
+                <form
                     className="w-full"
                     onSubmit={handleSubmit(onSubmit)}
                 >
                     <div className="mb-3">
                         <p className="mb-2 font-medium">Nome do Carro</p>
-                        <Input 
+                        <Input
                             type="text"
                             register={register}
                             name="name"
@@ -189,7 +193,7 @@ export function New() {
 
                     <div className="mb-3">
                         <p className="mb-2 font-medium">Modelo do carro</p>
-                        <Input 
+                        <Input
                             type="text"
                             register={register}
                             name="model"
@@ -201,7 +205,7 @@ export function New() {
                     <div className="flex w-full mb-3 flex-row items-center gap-4">
                         <div className="w-full">
                             <p className="mb-2 font-medium">Ano</p>
-                            <Input 
+                            <Input
                                 type="text"
                                 register={register}
                                 name="year"
@@ -211,7 +215,7 @@ export function New() {
                         </div>
                         <div className="w-full">
                             <p className="mb-2 font-medium">Km rodados</p>
-                            <Input 
+                            <Input
                                 type="text"
                                 register={register}
                                 name="km"
@@ -224,7 +228,7 @@ export function New() {
                     <div className="flex w-full mb-3 flex-row items-center gap-4">
                         <div className="w-full">
                             <p className="mb-2 font-medium">Telefone | Whatsapp</p>
-                            <Input 
+                            <Input
                                 type="text"
                                 register={register}
                                 name="whatsapp"
@@ -234,7 +238,7 @@ export function New() {
                         </div>
                         <div className="w-full">
                             <p className="mb-2 font-medium">Cidade</p>
-                            <Input 
+                            <Input
                                 type="text"
                                 register={register}
                                 name="city"
@@ -246,7 +250,7 @@ export function New() {
 
                     <div className="mb-3">
                         <p className="mb-2 font-medium">Preço:</p>
-                        <Input 
+                        <Input
                             type="text"
                             register={register}
                             name="price"
@@ -257,16 +261,16 @@ export function New() {
 
                     <div className="mb-3">
                         <p className="mb-2 font-medium">Descrição</p>
-                        <textarea 
+                        <textarea
                             className="border-2 w-full rounded-md h-24 px-2"
                             {...register("description")}
                             name="description"
                             id="description"
-                            placeholder="Digite a descriação completa sobre o carro..." 
+                            placeholder="Digite a descriação completa sobre o carro..."
                         />
                         {errors.description && <p className="mb-1 text-red-500">{errors.description.message}</p>}
                     </div>
-                    
+
                     <button
                         type="submit"
                         className="w-full rounded-md bg-zinc-900 text-white font-medium h-10">

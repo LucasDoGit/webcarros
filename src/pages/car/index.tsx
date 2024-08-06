@@ -142,7 +142,7 @@ export function CarDetail() {
                     <a 
                         className="cursor-pointer bg-green-500 w-full text-white flex items-center justify-center gap-2 my-6 h-11 text-xl rounded-lg font-medium"
                         target="_blank"
-                        href={`https://api.whatsapp.com/send?phone=${car?.whatsapp}&Olá vi esse ${car?.name} e fiquei interessado`}
+                        href={`https://api.whatsapp.com/send?phone=${car?.whatsapp}&text=Olá vi seu veiculo ${car?.name} no Webcarros e fiquei interessado`}
                     >
                         Conversar com o Vendedor
                         <FaWhatsapp size={26} color="#fff"/>
